@@ -1,0 +1,45 @@
+From 7d87d4d4df0424484b513ccd9b90c0d799a6f006 Mon Sep 17 00:00:00 2001
+From: Xiaoliang Yang <xiaoliang.yang_1@nxp.com>
+Date: Fri, 12 Jul 2024 11:12:03 +0800
+Subject: [PATCH 1/2] preempt_rt: allow readers before writer lock acquisition
+
+Allow readers to read as long as the writer has not completely acquired
+the semaphore for write. Without this code, the system can hang when an
+ENETC interface sends a large number of packets with PREEMPT_RT enabled.
+
+This is NXP Real-Time Edge commit
+7d87d4d4df0424484b513ccd9b90c0d799a6f006, which applies cleanly to the
+MYIR Linux 6.18.37 kernel.
+
+Upstream-Status: Inappropriate [NXP ENETC PREEMPT_RT integration]
+Signed-off-by: Xiaoliang Yang <xiaoliang.yang_1@nxp.com>
+Signed-off-by: Hou Zhiqiang <Zhiqiang.Hou@nxp.com>
+---
+ kernel/locking/rwbase_rt.c | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+diff --git a/kernel/locking/rwbase_rt.c b/kernel/locking/rwbase_rt.c
+index 9f4322c07486..428b6962a8d3 100644
+--- a/kernel/locking/rwbase_rt.c
++++ b/kernel/locking/rwbase_rt.c
+@@ -75,6 +75,17 @@ static int __sched __rwbase_read_lock(struct rwbase_rt *rwb,
+ 	rwbase_pre_schedule();
+ 	raw_spin_lock_irq(&rtm->wait_lock);
+ 
++	/*
++	 * Allow readers, as long as the writer has not completely
++	 * acquired the semaphore for write.
++	 */
++	if (atomic_read(&rwb->readers) != WRITER_BIAS) {
++		atomic_inc(&rwb->readers);
++		raw_spin_unlock_irq(&rtm->wait_lock);
++		rwbase_post_schedule();
++		return 0;
++	}
++
+ 	/*
+ 	 * Call into the slow lock path with the rtmutex->wait_lock
+ 	 * held, so this can't result in the following race:
+-- 
+2.43.0
+

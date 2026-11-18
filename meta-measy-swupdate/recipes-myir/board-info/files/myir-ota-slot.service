@@ -1,0 +1,12 @@
+[Unit]
+Description=Select the inactive SWUpdate slot
+After=local-fs.target
+Before=swupdate.service
+
+[Service]
+Type=oneshot
+ExecStart=/etc/myir-swupdate.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

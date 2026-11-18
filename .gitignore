@@ -1,0 +1,6 @@
+docs/
+/meta-measy-support/recipes-bsp/amp/*.md
+
+# Layers with their own Git repositories
+/meta-measy-rauc/
+/meta-measy-security/

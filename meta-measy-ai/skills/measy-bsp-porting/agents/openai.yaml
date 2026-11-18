@@ -1,0 +1,4 @@
+interface:
+  display_name: "MEasy BSP Porting"
+  short_description: "Guide BSP and board-level porting workflows"
+  default_prompt: "Use -bsp-porting to plan and validate this board adaptation."

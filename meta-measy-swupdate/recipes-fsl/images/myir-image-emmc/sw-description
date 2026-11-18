@@ -1,0 +1,52 @@
+software =
+{
+    version = "@@SWUPDATE_VERSION@@";
+    description = "MYD-JMX95X signed A/B update";
+    hardware-compatibility: [ "1.0" ];
+
+    @@MACHINE@@:
+    {
+        stable:
+        {
+            dualA_to_dualB:
+            {
+                images: (
+                    {
+                        filename = "@@MYIR_OTA_ROOTFS_FILE@@";
+                        device = "/dev/mmcblk0p4";
+                        installed-directly = true;
+                        sha256 = "$swupdate_get_sha256(@@MYIR_OTA_ROOTFS_FILE@@)";
+                    }
+                );
+                files: (
+                    $myir_ota_swdescription_files(slotB) /* generated */
+                );
+                bootenv: (
+                    { name = "bootslot"; value = "dualB"; },
+                    { name = "upgrade_available"; value = "1"; },
+                    { name = "bootcount"; value = "0"; }
+                );
+            };
+
+            dualB_to_dualA:
+            {
+                images: (
+                    {
+                        filename = "@@MYIR_OTA_ROOTFS_FILE@@";
+                        device = "/dev/mmcblk0p2";
+                        installed-directly = true;
+                        sha256 = "$swupdate_get_sha256(@@MYIR_OTA_ROOTFS_FILE@@)";
+                    }
+                );
+                files: (
+                    $myir_ota_swdescription_files(slotA) /* generated */
+                );
+                bootenv: (
+                    { name = "bootslot"; value = "dualA"; },
+                    { name = "upgrade_available"; value = "1"; },
+                    { name = "bootcount"; value = "0"; }
+                );
+            };
+        };
+    };
+}

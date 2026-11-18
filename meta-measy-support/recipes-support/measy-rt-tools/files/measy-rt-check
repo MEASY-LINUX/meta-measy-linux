@@ -1,0 +1,115 @@
+#!/bin/bash
+
+set -u
+
+status=0
+kernel_release="$(uname -r)"
+realtime="unknown"
+kernel_config=""
+
+read_value() {
+    local path="$1"
+    local value
+
+    if [[ -r "$path" ]]; then
+        value="$(< "$path")"
+        printf '%s' "${value:-none}"
+    else
+        printf 'unavailable'
+    fi
+}
+
+config_value() {
+    local option="$1"
+    local value
+
+    value="$(sed -n "s/^${option}=//p" <<< "$kernel_config")"
+    if [[ -n "$value" ]]; then
+        printf '%s' "$value"
+    elif grep -q "^# ${option} is not set$" <<< "$kernel_config"; then
+        printf 'n'
+    else
+        printf 'unknown'
+    fi
+}
+
+if [[ -r /proc/config.gz ]] && command -v zcat >/dev/null 2>&1; then
+    kernel_config="$(zcat /proc/config.gz)"
+elif [[ -r "/boot/config-${kernel_release}" ]]; then
+    kernel_config="$(< "/boot/config-${kernel_release}")"
+fi
+
+if [[ -r /sys/kernel/realtime ]]; then
+    realtime="$(< /sys/kernel/realtime)"
+elif [[ -n "$kernel_config" ]]; then
+    if grep -q '^CONFIG_PREEMPT_RT=y$' <<< "$kernel_config"; then
+        realtime="1"
+    else
+        realtime="0"
+    fi
+fi
+
+printf 'kernel_release=%s\n' "$kernel_release"
+printf 'preempt_rt=%s\n' "$realtime"
+printf 'cmdline=%s\n' "$(< /proc/cmdline)"
+
+if [[ "$realtime" != "1" ]]; then
+    printf 'error=PREEMPT_RT is not active\n' >&2
+    status=1
+fi
+
+if [[ -n "$kernel_config" ]]; then
+    for option in \
+        CONFIG_PREEMPT_RT \
+        CONFIG_HIGH_RES_TIMERS \
+        CONFIG_HZ \
+        CONFIG_CPU_ISOLATION \
+        CONFIG_NO_HZ_FULL \
+        CONFIG_RCU_NOCB_CPU \
+        CONFIG_IRQ_FORCED_THREADING \
+        CONFIG_DEBUG_PREEMPT \
+        CONFIG_PROVE_LOCKING \
+        CONFIG_RT_GROUP_SCHED; do
+        printf 'kernel_config.%s=%s\n' "$option" "$(config_value "$option")"
+    done
+else
+    printf 'warning=kernel configuration is unavailable\n' >&2
+fi
+
+printf 'clocksource.current=%s\n' \
+    "$(read_value /sys/devices/system/clocksource/clocksource0/current_clocksource)"
+printf 'scheduler.rt_period_us=%s\n' "$(read_value /proc/sys/kernel/sched_rt_period_us)"
+printf 'scheduler.rt_runtime_us=%s\n' "$(read_value /proc/sys/kernel/sched_rt_runtime_us)"
+printf 'cpu.isolated=%s\n' "$(read_value /sys/devices/system/cpu/isolated)"
+printf 'cpu.nohz_full=%s\n' "$(read_value /sys/devices/system/cpu/nohz_full)"
+printf 'rcu.nocbs=%s\n' "$(read_value /sys/devices/system/cpu/rcu_nocbs)"
+printf 'irq.default_affinity=%s\n' "$(read_value /proc/irq/default_smp_affinity)"
+printf 'limits.rtprio=%s\n' "$(ulimit -r)"
+printf 'limits.memlock_kbytes=%s\n' "$(ulimit -l)"
+
+governor_files=(/sys/devices/system/cpu/cpufreq/policy*/scaling_governor)
+if [[ -e "${governor_files[0]}" ]]; then
+    non_performance_governor=0
+    for governor_file in "${governor_files[@]}"; do
+        governor="$(< "$governor_file")"
+        printf 'cpu.governor.%s=%s\n' \
+            "$(basename "${governor_file%/scaling_governor}")" "$governor"
+        if [[ "$governor" != "performance" ]]; then
+            non_performance_governor=1
+        fi
+    done
+    if (( non_performance_governor )); then
+        printf 'warning=non-performance CPU governor can increase latency variance\n' >&2
+    fi
+fi
+
+for tool in cyclictest stress-ng rteval; do
+    if command -v "$tool" >/dev/null 2>&1; then
+        printf 'tool.%s=available\n' "$tool"
+    else
+        printf 'error=%s is not installed\n' "$tool" >&2
+        status=1
+    fi
+done
+
+exit "$status"

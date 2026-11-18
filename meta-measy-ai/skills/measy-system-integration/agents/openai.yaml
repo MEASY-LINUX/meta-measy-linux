@@ -1,0 +1,4 @@
+interface:
+  display_name: "MEasy System Integration"
+  short_description: "Guide Linux product and service integration"
+  default_prompt: "Use -system-integration to integrate and validate this system feature."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "MEasy Workflow Orchestrator"
+  short_description: "Coordinate requirements, specialist skills, and evidence"
+  default_prompt: "Use -workflow-orchestrator to coordinate this MEasyLinux adaptation from intake through acceptance."

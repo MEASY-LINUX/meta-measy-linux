@@ -1,0 +1,4 @@
+interface:
+  display_name: "MEasy QA Validation"
+  short_description: "Run traceable build, board, RT, and security QA"
+  default_prompt: "Use -qa-validation to plan and record QA for this exact MEasyLinux source snapshot."

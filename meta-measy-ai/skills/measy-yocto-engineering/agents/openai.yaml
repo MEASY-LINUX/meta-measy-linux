@@ -1,0 +1,4 @@
+interface:
+  display_name: "MEasy Yocto Engineering"
+  short_description: "Guide release-aware Yocto metadata work"
+  default_prompt: "Use -yocto-engineering to implement and validate this Yocto metadata change."

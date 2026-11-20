@@ -57,7 +57,7 @@ MYIR_OTA_PACKAGES = " \
 
 # Override the broad mx9 default in myir-image-multimedia.  Non-OTA images do
 # not contain the updater even when meta-swupdate and this layer are present.
-SWUPDATE:myir-jmx95 = "${@d.getVar('MYIR_OTA_PACKAGES') if d.getVar('OTA_SUPPORT') == '1' else ''}"
+SWUPDATE:myir-jmx95:mx9-nxp-bsp = "${@d.getVar('MYIR_OTA_PACKAGES') if d.getVar('OTA_SUPPORT') == '1' else ''}"
 
 IMAGE_CLASSES:append:myir-jmx95 = "${@' swupdate-image' if d.getVar('OTA_SUPPORT') == '1' else ''}"
 

@@ -41,7 +41,7 @@ python () {
         bb.fatal('OTA_SUPPORT must be "0" or "1", got %r' % enabled)
     overrides = (d.getVar('OVERRIDES') or '').split(':')
     if enabled == '1' and 'myir-jmx95' not in overrides:
-        bb.fatal('meta-measy-swupdate OTA layout supports only the MYD-JMX95X machine family')
+        bb.fatal('meta-measy-ota supports only the MYD-JMX95X machine family')
 }
 
 MYIR_OTA_PACKAGES = " \
